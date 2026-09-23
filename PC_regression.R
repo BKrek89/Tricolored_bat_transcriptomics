@@ -53,3 +53,36 @@ plot(simvarg)
 testDispersion(simvarg)
 testOutliers(simvarg)
 
+
+
+
+###create plots for the genes most associated with each PC.
+#S100 counts per sample extracted manually and imported.
+s100_counts$group <- factor(s100_counts$group, levels = c("Pre-MYLU", "Post-MYLU", "Post-PESU"))
+
+
+# Reshape the data to long format, using gene_name and set factor levels
+wns_long <- s100_counts %>%
+  pivot_longer(cols = c(S100A8, S100A12, S100A4), 
+               names_to = "gene_name", 
+               values_to = "value") %>%
+  mutate(gene_name = factor(gene_name, levels = c("S100A12", "S100A8", "S100A4")))
+
+# Create the faceted boxplot
+
+ggplot(data = wns_long, aes(x = group, y = value, color = group)) +
+  geom_boxplot(linewidth = 1.2) +
+  theme_minimal(base_size = 18) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_line(linewidth = 0.8),
+    legend.position = "none",
+    
+    axis.text = element_text(size = 16),
+    axis.text.x = element_text(size = 16, face = "bold"), 
+    axis.title = element_text(size = 20, face = "bold"),
+    strip.text = element_text(size = 18, face = "bold")
+  ) +
+  labs(x = NULL, y = "Normalized read count") +
+  facet_wrap(~ gene_name, scales = "free_y") +
+  scale_color_manual(values = c("lightblue", "royalblue", "green"))
