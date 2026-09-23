@@ -1,0 +1,78 @@
+####loop through raw read files and filter out rrna from the SILVA LSU reference using bbduk package
+for f in `ls -1 *-read-1.fastq.gz | sed 's/-read-1.fastq.gz//' `
+do
+bbduk.sh ignorejunk in=${f}-read-1.fastq.gz out=${f}.gen.fastq.gz outm=${f}.rrna.fastq.gz ref=/path/LSUref138.1.fasta.gz k=31 hdist=1 stats=${f}.stats.txt
+done
+
+####filter out rrna from the SILVA SSU reference using bbduk package
+for f in `ls -1 *.gen.fastq.gz | sed 's/.gen.fastq.gz//' `
+do
+bbduk.sh ignorejunk in=${f}.gen.fastq.gz out=${f}.gen2.fastq.gz outm=${f}.rrna2.fastq.gz ref=/path/SSUref138.1.fasta.gz k=31 hdist=1 stats=${f}.stats2.txt
+done
+
+
+####remove low quality bases, adapters, polyA tails, reads with lengths < 30, and reads with low quality windows using TRIMMOMATIC
+for f in `ls -1 *.gen2.fastq.gz | sed 's/.gen2.fastq.gz//' `
+do
+trimmomatic SE -phred33 ${f}.gen2.fastq.gz ${f}.gen2.trim.fastq.gz ILLUMINACLIP:pandt.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:30
+done
+
+####remove reads aligning to bacteria, virus, fungi, human, or mouse genomes from genbank using fastqscreen
+#python script
+import os
+from os.path import exists
+import csv
+import time
+
+startVar = 0
+
+if exists('restart.in'):
+     with open('restart.in','r') as ioText:
+         startVar = int(ioText.readlines()[0].strip())+1
+     print("Start value is ",str(startVar))
+     time.sleep(5)
+
+file_array = []
+with open('filelist.txt', 'r') as iowrapper:
+    csvreader = csv.reader(iowrapper, delimiter=',')
+    for row in csvreader:
+        file_array.append(row[0])
+
+for i in range(startVar,100):
+    filebase = file_array[i]
+    os.system(f"fastq_screen --threads 12 --subset 0 --conf /path/fastq-screen-0.14.0-0/fastq_screen.conf.alt --tag --filter 00000000000000000000 --force --aligner Bowtie2 {filebase}.gen2.trim.fastq.gz")
+    print(i)
+    # write i into restart file
+    with open('restart.in','w') as iowrapper:
+        iowrapper.write(str(i))
+#run python script
+OMP_NUM_THREADS=12
+srun python fastq_script.py
+
+####align reads to Myo_Luc2.0 genome using STAR aligner
+
+for f in `ls -1 *.gen2.trim.tagged_filter.fastq.gz | sed 's/.gen2.trim.tagged_filter.fastq.gz//' `
+do
+STAR --runMode alignReads --outFilterScoreMinOverLread 0 --outFilterMatchNminOverLread 0 --outFilterMatchNmin 0 --outFilterMismatchNmax 2 --outSAMtype BAM Unsorted --readFilesCommand zcat --genomeDir /path/to/starindex/directory/ --outFileNamePrefix ${f}.a1.gen2.bam  --readFilesIn  ${f}.gen2.trim.tagged_filter.fastq.gz
+done
+
+
+####sort bam files with samtools
+for f in `ls -1 *.out.bam | sed 's/.out.bam//' `
+do
+samtools sort ${f}.out.bam -o ${f}.sorted.bam
+done
+
+
+####produce read tables from each file with htseq
+for f in `ls -1 *.a1.gen2.bamAligned.sorted.bam | sed 's/.a1.gen2.bamAligned.sorted.bam//' `
+do
+htseq-count -f bam -s no -i gene_id ${f}.a1.gen2.bamAligned.sorted.bam /path/Myotis_lucifugus.Myoluc2.0.102.gtf > counts/${f}.hscount
+done
+
+####merge read tables
+FILES=$(ls *.hscount | tr '\n' ' ');
+
+awk 'NF > 1{ a[$1] = a[$1]"\t"$2} END {for( i in a ) print i a[i]}' $FILES > merged.htseq
+
+
