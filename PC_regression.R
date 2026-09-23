@@ -2,7 +2,7 @@ library(ggplot2)
 library(DHARMa)
 library(emmeans)
 library(dplyr)
-
+library(tidyr)
 
 
 ###run models of PC1 and PC2 by sample group with sex and sequencing batch as covariates 
