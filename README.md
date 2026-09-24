@@ -4,6 +4,7 @@ Part of the included code was run on a linux based HPC and part was completed in
 
 The order of the scripts is as follows:
 On the HPC
+
     1. read filtering and alignment in Bash
 
          a. move to main analysis in R
