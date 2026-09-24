@@ -4,17 +4,17 @@ Part of the included code was run on a linux based HPC and part was completed in
 
 The order of the scripts is as follows:
 On the HPC
-  1. read filtering and alignment in Bash
+    1. read filtering and alignment in Bash
 
-       a. move to main analysis in R
-       b. move to QC
-       c. mov to P. destructans analysis
+         a. move to main analysis in R
+         b. move to QC
+         c. mov to P. destructans analysis
 
 Main analysis in R
  
-  1. post_alignment_filtering.R
-  2. PC_regression.R
-  3. DESeq2_and_venndiagram.R
+    1. post_alignment_filtering.R
+    2. PC_regression.R
+    3. DESeq2_and_venndiagram.R
 
 
 QC (after completing read filtering and alignment in Bash)
