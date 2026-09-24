@@ -1,4 +1,5 @@
-#AI assisted
+##script to run this on an hpc can be found in QC in bash
+#AI assisted in writing this R code
 
 out_dir <- "results"
 
