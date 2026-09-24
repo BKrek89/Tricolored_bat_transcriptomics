@@ -1,0 +1,52 @@
+######After completing at least the TRIMMOMATIC step in read filtering and alignment in Bash
+
+#####rerun fastq_screen without removing fungal reads
+###python script
+import os
+from os.path import exists
+import csv
+import time
+
+startVar = 0
+
+if exists('restart.in'):
+     with open('restart.in','r') as ioText:
+         startVar = int(ioText.readlines()[0].strip())+1
+     print("Start value is ",str(startVar))
+     time.sleep(5)
+
+file_array = []
+with open('filelist.txt', 'r') as iowrapper:
+    csvreader = csv.reader(iowrapper, delimiter=',')
+    for row in csvreader:
+        file_array.append(row[0])
+
+for i in range(startVar,105):
+    filebase = file_array[i]
+    os.system(f"fastq_screen --threads 12 --subset 0 --conf /path/fastq_screen.conf.pd --tag --filter 0000000000000000000 --force --aligner Bowtie2 {filebase}.gen2.trim.fastq.gz {filebase}.gen2.trim.sc.fastq.gz")
+    print(i)
+    # write i into restart file
+    with open('restart.in','w') as iowrapper:
+        iowrapper.write(str(i))
+
+###run fastq_screen python script
+OMP_NUM_THREADS=12
+srun python fastq_script.pd.py
+
+
+###align to P. destructans genome with STAR aligner
+for f in `ls -1 *.gen2.trim.tagged_filter.fastq.gz | sed 's/.gen2.trim.tagged_filter.fastq.gz//' `
+do
+STAR --runMode alignReads --runThreadN 12 --outSAMtype BAM Unsorted --readFilesCommand zcat --genomeDir /path/pdgenome/grna/ --outFileNamePrefix ${f}.fil.trim.pd.bam --readFilesIn ${f}.gen2.trim.tagged_filter.fastq.gz
+done
+
+###create read count tables with htseq
+for f in `ls -1 *.bamAligned.sorted.bam | sed 's/.bamAligned.sorted.bam//' `
+do
+htseq-count -f bam -s no -i gene_id ${f}.bamAligned.sorted.bam /path/pdgenome/GCF_001641265.1_ASM164126v1_genomic.gtf > ${f}.pd.hscount
+done
+
+###merge read count tables into one table
+FILES=$(ls *.hscount | tr '\n' ' ');
+
+awk 'NF > 1{ a[$1] = a[$1]"\t"$2} END {for( i in a ) print i a[i]}' $FILES > merged.pesu.pd.htseq
