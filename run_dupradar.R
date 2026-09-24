@@ -1,6 +1,6 @@
 
 ####config file and script to run this R code on an hpc can be found in "QC in bash"
-
+#AI assisted in editing this R code
 
 library(dupRadar)
 
