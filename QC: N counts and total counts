@@ -1,0 +1,16 @@
+#count the number of Ns for each sample.
+for f in `ls -1 *.out.bam | sed 's/.out.bam//' `
+do
+samtools view -F 4 -h ${f}.out.bam | \
+    awk '{ if ($1 ~ /^@/) print; else if ($10 ~ /N/) print $10; }' | \
+    tr -d '\n' | \
+    wc -m > ${f}.n_count.txt
+done
+
+
+#count the total number of base calls for each sample
+for f in `ls -1 *.out.bam | sed 's/.out.bam//' `
+do
+samtools view -F 4 ${f}.out.bam | \
+    awk '{ sum += length($10) } END { print sum }' > ${f}.totalcount.txt
+done
