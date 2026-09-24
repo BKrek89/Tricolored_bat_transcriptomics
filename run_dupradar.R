@@ -1,3 +1,7 @@
+
+####config file and script to run this R code on an hpc can be found in "QC in bash"
+
+
 library(dupRadar)
 
 #set up paths with config file
