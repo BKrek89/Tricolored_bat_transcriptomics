@@ -39,3 +39,10 @@ QC (after completing read filtering and alignment in Bash)
 
 P. destructans analysis
 
+On the HPC
+
+    1. Pd in Bash
+
+In R
+
+    1. pd.R
