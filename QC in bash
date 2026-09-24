@@ -1,0 +1,181 @@
+#count the number of Ns for each sample.
+for f in `ls -1 *.out.bam | sed 's/.out.bam//' `
+do
+samtools view -F 4 -h ${f}.out.bam | \
+    awk '{ if ($1 ~ /^@/) print; else if ($10 ~ /N/) print $10; }' | \
+    tr -d '\n' | \
+    wc -m > ${f}.n_count.txt
+done
+
+
+#count the total number of base calls for each sample
+for f in `ls -1 *.out.bam | sed 's/.out.bam//' `
+do
+samtools view -F 4 ${f}.out.bam | \
+    awk '{ sum += length($10) } END { print sum }' > ${f}.totalcount.txt
+done
+
+
+#########reference bias analysis
+#count the number of reads per gene
+for f in *.a1.gen2.bamAligned.sorted.bam
+do
+
+    base=$(basename "$f" .a1.gen2.bamAligned.sorted.bam)
+
+    featureCounts \
+        -T 8 \
+        -a /path/Myotis_lucifugus.Myoluc2.0.102.gtf \
+        -g gene_id \
+        -s 0 \
+        -R BAM \
+        -o "/path/${base}.counts.txt" \
+        "$f"
+
+    mv "${f}.featureCounts.bam" \
+       "/path/${base}.featureCounts.bam"
+
+    samtools sort \
+        -o "/path/${base}.featureCounts.sorted.bam" \
+        "/path/${base}.featureCounts.bam"
+
+    samtools index \
+        "/path/${base}.featureCounts.sorted.bam"
+
+done
+
+
+#calculate per-gene mismatch rate
+BAMDIR="/scratch/rek89/pesu/QC/bams"
+OUT="/scratch/rek89/pesu/QC/gene_mapping_stats.txt"
+
+echo -e "Sample\tGeneID\tUnique_Reads\tTotal_Mismatches\tAligned_Bases\tMismatch_Rate" > "$OUT"
+
+for bam in "$BAMDIR"/*.featureCounts.bam
+do
+
+    sample=$(basename "$bam" .featureCounts.bam)
+
+    echo "Processing $sample"
+
+    samtools view "$bam" |
+    awk -v sample="$sample" '
+    BEGIN {
+        FS="\t";
+    }
+
+    {
+        nh = "";
+        nm = "";
+        gene = "";
+
+        # Find NH, nM and XT tags
+        for (i=12; i<=NF; i++) {
+
+            if ($i ~ /^NH:i:/)
+                nh = substr($i,6);
+
+            if ($i ~ /^nM:i:/)
+                nm = substr($i,6);
+
+            if ($i ~ /^XT:Z:/)
+                gene = substr($i,6);
+        }
+        if (nh == 1 && gene != "" && nm != "") {
+            # Calculate aligned bases from CIGAR
+            cigar = $6;
+            aligned = 0;
+
+            while (match(cigar, /[0-9]+[M=X]/)) {
+
+                token = substr(cigar, RSTART, RLENGTH);
+
+                n = token;
+                sub(/[M=X]$/, "", n);
+
+                aligned += n;
+
+                cigar = substr(cigar, RSTART + RLENGTH);
+            }
+
+            if (aligned > 0) {
+
+                reads[gene]++;
+                mismatches[gene] += nm;
+                bases[gene] += aligned;
+            }
+        }
+    }
+
+    END {
+
+        for (gene in reads) {
+
+            rate = mismatches[gene] / bases[gene];
+
+            print sample "\t" gene "\t" \
+                  reads[gene] "\t" \
+                  mismatches[gene] "\t" \
+                  bases[gene] "\t" \
+                  rate;
+        }
+    }
+    ' >> "$OUT"
+
+done
+
+
+#####################duplication analysis
+
+#mark duplicates but do not remove them with picard
+for f in `ls -1 *.sorted.bam | sed 's/.sorted.bam//' `
+do
+picard -Xmx100g MarkDuplicates \
+      REMOVE_DUPLICATES=false \
+      I=${f}.sorted.bam \
+      O=duprad/${f}.sorted.mdup.bam \
+      M=duprad/${f}.marked_mdup_metrics.txt
+done
+
+
+#extract duplication rate from picard metrics
+echo -e "Sample\tDuplication_Rate"
+
+for f in *_metrics.txt
+do
+    sample=$(basename "$f" _metrics.txt)
+
+    dup=$(awk '
+        /^Unknown Library/ {
+            print $9
+            exit
+        }
+    ' "$f")
+
+    echo -e "${sample}\t${dup}"
+done
+
+
+
+#Run dupRadar Rscript (actual script available as run_dupradar.R, config file below)
+$Rscript --vanilla run_dupradar.R config.txt
+
+#config file for dupRadar
+BAM_DIR=bams
+GTF=/scratch/rek89/genome/Myotis_lucifugus.Myoluc2.0.102.gtf
+OUT_DIR=results
+TMP_DIR=tmp
+
+STRANDED=1
+PAIRED=FALSE
+THREADS=8
+
+
+#Run Rscript to summarize dupRadar output for RPK. Extract the slope and intercept for each sample. (actual script available as summarize.dups.R)
+$Rscript --vanilla summarize.dups.R
+
+
+#Run Rscript to summarize dupRadar output for raw counts. Regress and extract the slope and intercept for each sample. (actual script available as raw.dup.R)
+$Rscript --vanilla raw.dup.R
+
+
