@@ -11,7 +11,7 @@ On the HPC
 
          a. move to main analysis in R
          b. move to QC
-         c. mov to P. destructans analysis
+         c. move to P. destructans analysis
 
 Main analysis in R
  
