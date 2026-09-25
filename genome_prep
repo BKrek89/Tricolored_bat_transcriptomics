@@ -1,0 +1,16 @@
+
+#index repeat masked genome with genmap
+genmap index -F Myotis_lucifugus.Myoluc2.0.dna_rm.toplevel.fa -I genmapindex2
+
+#calculate mapability scores across genome
+genmap map -K 100 -E 2 -I genmapindex2 -O gmapout.2 -bg
+
+#make bedfile of all regions with mapability < 1
+awk -F$'\t' 'BEGIN{OFS="\t"} $4 < 1.0 { print $1, $2, $3, ".", $4 }' gmapout.2.bedgraph > gmap.mylu.rm.100k_filtered.bed
+
+#mask all regions with mapability < 1
+bedtools maskfasta -fi Myotis_lucifugus.Myoluc2.0.dna_rm.toplevel.fa -bed gmap.mylu.rm.100k_filtered.bed -fo mylu.genome.rm.gmap.k100.fa
+
+#index genome with STAR aligner
+STAR --runThreadN 8 --runMode genomeGenerate --genomeDir grna/ --genomeFastaFiles /path/mylu.genome.rm.gmap.k100.fa --sjdbGTFfile /path/Myotis_lucifugus.Myoluc2.0.102.gtf --sjdbOverhang 1
+
