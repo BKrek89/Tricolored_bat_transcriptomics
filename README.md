@@ -6,7 +6,8 @@ The order of the scripts is as follows:
 
 On the HPC
 
-    1. read filtering and alignment in Bash
+    1. genome_prep
+    2. read filtering and alignment in Bash
 
          a. move to main analysis in R
          b. move to QC
