@@ -14,3 +14,36 @@ bedtools maskfasta -fi Myotis_lucifugus.Myoluc2.0.dna_rm.toplevel.fa -bed gmap.m
 #index genome with STAR aligner
 STAR --runThreadN 8 --runMode genomeGenerate --genomeDir grna/ --genomeFastaFiles /path/mylu.genome.rm.gmap.k100.fa --sjdbGTFfile /path/Myotis_lucifugus.Myoluc2.0.102.gtf --sjdbOverhang 1
 
+
+
+
+###genomes for fastq_screen
+
+#download bacterial genomes from genbank
+curl 'ftp://ftp.ncbi.nlm.nih.gov/genomes/genbank/bacteria/assembly_summary.txt'>assembly_summary.txt
+awk -F "\t" '$12=="Complete Genome" && $11=="latest"{print $20}' assembly_summary.txt > ftpdirpaths
+awk 'BEGIN{FS=OFS="/";filesuffix="genomic.fna.gz"}{ftpdir=$0;asm=$10;file=asm"_"filesuffix;print ftpdir,file}' ftpdirpaths > ftpfilepaths
+wget -i ftpfilepaths
+cat *.fna >> /path/bac_reference.fna
+
+#download fungal genomes from genbank
+curl 'ftp://ftp.ncbi.nlm.nih.gov/genomes/genbank/fungi/assembly_summary.txt'>fungiassembly_summary.txt
+awk -F "\t" '$12=="Complete Genome" && $11=="latest"{print $20}' fungiassembly_summary.txt > ftpdirpaths
+awk 'BEGIN{FS=OFS="/";filesuffix="genomic.fna.gz"}{ftpdir=$0;asm=$10;file=asm"_"filesuffix;print ftpdir,file}' ftpdirpaths > ftpfilepaths
+wget -i ftpfilepaths
+cat *.fna >> /path/fungal_reference.fna
+
+
+#download virus genomes from genbank
+curl 'ftp://ftp.ncbi.nlm.nih.gov/genomes/genbank/viral/assembly_summary.txt'>virusassembly_summary.txt
+awk -F "\t" '$12=="Complete Genome" && $11=="latest"{print $20}' virusassembly_summary.txt > ftpdirpaths
+awk 'BEGIN{FS=OFS="/";filesuffix="genomic.fna.gz"}{ftpdir=$0;asm=$10;file=asm"_"filesuffix;print ftpdir,file}' ftpdirpaths > ftpfilepaths
+wget -i ftpfilepaths
+cat *.fna >> /path/viral_reference.fna
+
+#download human genome from ensembl
+wget 'ftp://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz'
+
+
+#use bowtie to index all the combined genome files. Some of the combined genomes had to be subset on my system to work. 
+bowtie2-build -f bacterial_reference.fna bac
