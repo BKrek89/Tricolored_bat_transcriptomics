@@ -3,26 +3,92 @@ library(dplyr)
 library(emmeans)
 library(tidyr)
 library(ggplot2)
-#sequencing depth by genes discovered
-#raw reads by gene number
-ggplot(
-  dup_graphs_simple,
-  aes(x = raw_reads, y = Genes)
-) +
+######sequencing depth by genes discovered
+#####raw reads by gene number
+readgenemod <- lm(Genes~raw_reads, dup_graphs_simple)
+mm <- nls(
+  Genes ~ Vmax * raw_reads / (Km + raw_reads),
+  data = dup_graphs_simple,
+  start = list(
+    Vmax = max(dup_graphs_simple$Genes),
+    Km = median(dup_graphs_simple$raw_reads)
+  )
+)
+negexp <- nls(
+  Genes ~ A * (1 - exp(-k * raw_reads)),
+  data = dup_graphs_simple,
+  start = list(
+    A = max(dup_graphs_simple$Genes),
+    k = 1 / median(dup_graphs_simple$raw_reads)
+  )
+)
+AIC(readgenemod, mm, negexp)
+summary(negexp)
+confint(negexp)
+#predict model for confidence intervals. (AI assist)
+# Prediction grid
+pred <- data.frame(
+  raw_reads = seq(
+    min(dup_graphs_simple$raw_reads),
+    max(dup_graphs_simple$raw_reads),
+    length.out = 500
+  )
+)
+
+# Coefficients
+b <- coef(negexp)
+A <- b["A"]
+k <- b["k"]
+
+# Fitted curve
+pred$fit <- A * (1 - exp(-k * pred$raw_reads))
+
+# Variance-covariance matrix
+V <- vcov(negexp)
+
+# Derivatives
+dA <- 1 - exp(-k * pred$raw_reads)
+dk <- A * pred$raw_reads * exp(-k * pred$raw_reads)
+
+# Standard error of fitted curve
+pred$se <- sqrt(
+  dA^2 * V["A", "A"] +
+    dk^2 * V["k", "k"] +
+    2 * dA * dk * V["A", "k"]
+)
+
+# 95% CI
+pred$lwr <- pred$fit - 1.96 * pred$se
+pred$upr <- pred$fit + 1.96 * pred$se
+
+
+ggplot(dup_graphs_simple, aes(x = raw_reads, y = Genes)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_ribbon(
+    data = pred,
+    aes(
+      x = raw_reads,
+      ymin = lwr,
+      ymax = upr
+    ),
+    inherit.aes = FALSE,
+    alpha = 0.2
+  ) +
+  geom_line(
+    data = pred,
+    aes(x = raw_reads, y = fit),
+    linewidth = 1,
+    colour = "blue"
+  ) +
   theme_classic(base_size = 16) +
   labs(
     x = "Raw read count",
     y = "Gene number"
   )
 
-readgenemod <- lm(Genes~raw_reads, dup_graphs_simple)
-summary(readgenemod)
 
 
-
-#gene number by raw reads and sample group
+#####gene number by raw reads and sample group
 qc <- expression_data %>%
   pivot_longer(
     cols = -GeneID,
