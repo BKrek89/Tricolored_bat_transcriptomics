@@ -52,7 +52,7 @@ ggplot(qc, aes(x = Sequencing_Depth, y = Genes_10plus, color = expression_meta$w
 
 ggplot(qc, aes(Sequencing_Depth, Genes_10plus, color = expression_meta$wspec)) +
   geom_point(size = 3) +
-  geom_smooth(method = "lm", se = FALSE) +
+  geom_smooth(method = "lm", se = TRUE) +
   theme_classic(base_size = 18)
 
 summary(lm(Genes_10plus ~ Sequencing_Depth * expression_meta$wspec, data = qc))
