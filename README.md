@@ -8,10 +8,12 @@ Required Bioinformatics packages
    3. TRIMMOMATIC
    4. FastQScreen
    5. STAR
-   6. SAMtools
+   6. samtools
    7. HTSeq
    8. Subread
    9. Picard
+   10. genmap
+   11. bedtools
     
 Required R packages
    1. dplyr
