@@ -25,6 +25,8 @@ Required R packages
    10. eulerr
    11. tidyr
    12. BiocManager
+   13. purrr
+   14. tibble
 
 
 
