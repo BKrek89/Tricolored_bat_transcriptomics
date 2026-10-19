@@ -21,6 +21,8 @@ Required R packages
    6. dupRadar
    7. emmeans
    8. DHARMa
+   9. writexl
+   10. eulerr
 
 
 
