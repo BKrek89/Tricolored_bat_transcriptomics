@@ -13,14 +13,14 @@ Required Bioinformatics packages
    8. Subread
     
 Required R packages
-    1. dplyr
-    2. ggplot2
-    3. ggbiplot
-    4. tidyverse
-    5. DESeq2
-    6. dupRadar
-    7. emmeans
-    8. DHARMa
+   1. dplyr
+   2. ggplot2
+   3. ggbiplot
+   4. tidyverse
+   5. DESeq2
+   6. dupRadar
+   7. emmeans
+   8. DHARMa
 
 
 
