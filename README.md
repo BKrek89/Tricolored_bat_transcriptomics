@@ -3,23 +3,25 @@ This repository contains the code for all analyses in the manuscript "Preliminar
 Part of the included code was run on a linux based HPC and part was completed in R.
 
 Required Bioinformatics packages
-    BARCODESPLITTER
-    BBtools
-    TRIMMOMATIC
-    FastQscreen
-    BWA
-    SAMtools
-    HTSeq
-    subread
+   1. BARCODESPLITTER
+   2. bbtools
+   3. TRIMMOMATIC
+   4. FastQScreen
+   5. STAR
+   6. SAMtools
+   7. HTSeq
+   8. Subread
     
 Required R packages
-    dplyr
-    ggplot2
-    ggbiplot
-    tidyverse
-    DESeq2
-    dupRadar
-    
+    1. dplyr
+    2. ggplot2
+    3. ggbiplot
+    4. tidyverse
+    5. DESeq2
+    6. dupRadar
+    7. emmeans
+    8. DHARMa
+
 
 
 
