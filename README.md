@@ -24,6 +24,7 @@ Required R packages
    9. writexl
    10. eulerr
    11. tidyr
+   12. BiocManager
 
 
 
