@@ -23,6 +23,7 @@ Required R packages
    8. DHARMa
    9. writexl
    10. eulerr
+   11. tidyr
 
 
 
