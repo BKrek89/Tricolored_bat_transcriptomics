@@ -11,6 +11,7 @@ Required Bioinformatics packages
    6. SAMtools
    7. HTSeq
    8. Subread
+   9. Picard
     
 Required R packages
    1. dplyr
